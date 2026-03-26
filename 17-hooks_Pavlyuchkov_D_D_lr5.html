@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>17-hooks_Pavlyuchkov_D_D</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+  <style>
+    body {
+      margin: 20px;
+      font-family: Arial, sans-serif;
+    }
+
+    .top-panel {
+      position: sticky;
+      top: 0;
+      background: white;
+      padding-bottom: 12px;
+    }
+
+    .components-row {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    .component-box {
+      border: 1px solid black;
+      padding: 12px;
+      min-width: 180px;
+    }
+
+    .log-box {
+      border: 1px solid black;
+      padding: 10px;
+      height: 260px;
+      overflow-y: auto;
+    }
+
+    .log-box p {
+      margin: 4px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div id="appVue">
+
+  <div class="top-panel">
+    <div class="components-row">
+      <component-a
+        :signal="signal"
+        @send-a-signal="fromAButton">
+      </component-a>
+
+      <component-b
+        :signal="signal"
+        @send-b-signal="fromBButton">
+      </component-b>
+    </div>
+  </div>
+
+  <p><strong>Журнал событий:</strong></p>
+  <div class="log-box">
+    <p v-for="(m, index) in message" :key="index">{{ m }}</p>
+  </div>
+
+</div>
+
+<script>
+Vue.component('component-a', {
+  props: ['signal'],
+
+  data: function () {
+    return {
+      a: 1,
+      lastHandled: -1,
+      lastLoggedSignal: -1
+    };
+  },
+
+  template: `
+    <div class="component-box">
+      <p><strong>Компонент A</strong></p>
+      <p>A = {{ a }}</p>
+      <button @click="pressA">Обновить A</button>
+      <span style="display:none">{{ signal.id }}</span>
+    </div>
+  `,
+
+  methods: {
+    pressA: function () {
+      this.a = this.a + 1;
+      this.$root.addMessage('Нажата кнопка "Обновить A" -> A изменён');
+      this.$emit('send-a-signal');
+    }
+  },
+
+  beforeCreate: function () {
+    console.log('Component A -> beforeCreate');
+  },
+
+  created: function () {
+    console.log('Component A -> created');
+  },
+
+  beforeMount: function () {
+    console.log('Component A -> beforeMount');
+  },
+
+  mounted: function () {
+    console.log('Component A -> mounted');
+    this.$root.addMessage('Компонент A смонтирован');
+  },
+
+  beforeUpdate: function () {
+    if (this.signal.id !== this.lastLoggedSignal) {
+      console.log('Component A -> beforeUpdate');
+      this.$root.addMessage('Перед обновлением компонента A');
+    }
+  },
+
+  updated: function () {
+    if (this.signal.id !== this.lastLoggedSignal) {
+      console.log('Component A -> updated');
+      this.$root.addMessage('Компонент A обновлён');
+      this.lastLoggedSignal = this.signal.id;
+    }
+
+    if (
+      this.signal.source === 'B_BUTTON' &&
+      this.lastHandled !== this.signal.id
+    ) {
+      this.lastHandled = this.signal.id;
+      this.a = this.a + 1;
+      this.$root.addMessage('После нажатия кнопки B хук updated компонента A вызвал ответное изменение A');
+    }
+  }
+});
+
+Vue.component('component-b', {
+  props: ['signal'],
+
+  data: function () {
+    return {
+      b: 1,
+      lastHandled: -1,
+      lastLoggedSignal: -1
+    };
+  },
+
+  template: `
+    <div class="component-box">
+      <p><strong>Компонент B</strong></p>
+      <p>B = {{ b }}</p>
+      <button @click="pressB">Обновить B</button>
+      <span style="display:none">{{ signal.id }}</span>
+    </div>
+  `,
+
+  methods: {
+    pressB: function () {
+      this.b = this.b + 1;
+      this.$root.addMessage('Нажата кнопка "Обновить B" -> B изменён');
+      this.$emit('send-b-signal');
+    }
+  },
+
+  beforeCreate: function () {
+    console.log('Component B -> beforeCreate');
+  },
+
+  created: function () {
+    console.log('Component B -> created');
+  },
+
+  beforeMount: function () {
+    console.log('Component B -> beforeMount');
+  },
+
+  mounted: function () {
+    console.log('Component B -> mounted');
+    this.$root.addMessage('Компонент B смонтирован');
+  },
+
+  beforeUpdate: function () {
+    if (this.signal.id !== this.lastLoggedSignal) {
+      console.log('Component B -> beforeUpdate');
+      this.$root.addMessage('Перед обновлением компонента B');
+    }
+  },
+
+  updated: function () {
+    if (this.signal.id !== this.lastLoggedSignal) {
+      console.log('Component B -> updated');
+      this.$root.addMessage('Компонент B обновлён');
+      this.lastLoggedSignal = this.signal.id;
+    }
+
+    if (
+      this.signal.source === 'A_BUTTON' &&
+      this.lastHandled !== this.signal.id
+    ) {
+      this.lastHandled = this.signal.id;
+      this.b = this.b + 1;
+      this.$root.addMessage('После нажатия кнопки A хук updated компонента B вызвал ответное изменение B');
+    }
+  }
+});
+
+new Vue({
+  el: '#appVue',
+
+  data: {
+    message: [],
+    signal: {
+      source: 'INIT',
+      id: 0
+    }
+  },
+
+  beforeCreate: function () {
+    console.log('Root -> beforeCreate');
+  },
+
+  created: function () {
+    console.log('Root -> created');
+  },
+
+  beforeMount: function () {
+    console.log('Root -> beforeMount');
+  },
+
+  mounted: function () {
+    console.log('Root -> mounted');
+    this.addMessage('Объект Vue смонтирован');
+  },
+
+  methods: {
+    addMessage: function (text) {
+      var currentDate = new Date();
+      var timeString = currentDate.toLocaleTimeString();
+      this.message.push(
+        text + ': ' +
+        timeString +
+        ' мс: ' +
+        currentDate.getMilliseconds()
+      );
+    },
+
+    fromAButton: function () {
+      this.signal = {
+        source: 'A_BUTTON',
+        id: this.signal.id + 1
+      };
+    },
+
+    fromBButton: function () {
+      this.signal = {
+        source: 'B_BUTTON',
+        id: this.signal.id + 1
+      };
+    }
+  }
+});
+</script>
+
+</body>
+</html>

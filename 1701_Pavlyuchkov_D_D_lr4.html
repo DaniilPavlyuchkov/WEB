@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<head>
+  <title>1701_[Pavlyuchkov_D_D]</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <div v-bind:align="divAlign">
+    <iframe
+      v-bind:src="siteUrl"
+      v-bind:width="frameWidth"
+      v-bind:height="frameHeight"
+      v-bind:scrolling="scrollMode"
+      v-bind:marginheight="offsetTop"
+      v-bind:marginwidth="offsetLeft">
+    </iframe>
+  </div>
+</div>
+
+<script>
+Vue.createApp({
+  data() {
+    return {
+      siteUrl: '17_[Pavlyuchkov_D_D].html',
+      frameWidth: 200,
+      frameHeight: 300,
+      scrollMode: 'no',
+      offsetTop: 20,
+      offsetLeft: 30,
+      divAlign: 'right'
+    }
+  }
+}).mount('#app')
+</script>
+
+</body>
+</html>

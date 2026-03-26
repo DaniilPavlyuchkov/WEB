@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<head>
+<title>1702_[Pavlyuchkov_D_D]</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <div v-bind:style="{ textAlign: currentAlign }">
+
+    <button
+      v-bind:style="{ display: buttonVisible ? 'inline-block' : 'none' }"
+      v-on:mouseover="changeAlignment"
+      v-on:click="showLuck">
+      Попробуй нажми
+    </button>
+
+    <span v-bind:style="{ display: buttonVisible ? 'none' : 'inline' }">
+      Удача!
+    </span>
+
+  </div>
+
+</div>
+
+<script>
+Vue.createApp({
+  data() {
+    return {
+      currentAlign: 'left',
+      buttonVisible: true
+    }
+  },
+  methods: {
+    changeAlignment() {
+      const variants = ['left', 'center', 'right']
+      this.currentAlign = variants[Math.floor(Math.random() * variants.length)]
+    },
+    showLuck() {
+      this.buttonVisible = false
+      this.currentAlign = 'center'
+    }
+  }
+}).mount('#app')
+</script>
+
+</body>
+</html>

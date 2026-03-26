@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<head>
+<title>1703_[Pavlyuchkov_D_D]</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <div>
+    <input type="radio" id="r1" name="fontStyle" value="style1" v-model="selectedStyle">
+    <label for="r1" v-bind:style="currentStyle">Times New Roman; 14 pt; bold; italic;</label>
+  </div>
+
+  <div>
+    <input type="radio" id="r2" name="fontStyle" value="style2" v-model="selectedStyle">
+    <label for="r2" v-bind:style="currentStyle">Arial; 10 pt; underline; bold;</label>
+  </div>
+
+  <div>
+    <input type="radio" id="r3" name="fontStyle" value="style3" v-model="selectedStyle">
+    <label for="r3" v-bind:style="currentStyle">Tahoma; 12 pt; strike; bold;</label>
+  </div>
+
+  <div>
+    <input type="radio" id="r4" name="fontStyle" value="style4" v-model="selectedStyle">
+    <label for="r4" v-bind:style="currentStyle">Courier New; 18 pt; italic;</label>
+  </div>
+
+  <div>
+    <input type="radio" id="r5" name="fontStyle" value="style5" v-model="selectedStyle">
+    <label for="r5" v-bind:style="currentStyle">Book Antiqua; 16 pt; underline; italic;</label>
+  </div>
+
+</div>
+
+<script>
+Vue.createApp({
+  data() {
+    return {
+      selectedStyle: ''
+    }
+  },
+  computed: {
+    currentStyle() {
+      switch (this.selectedStyle) {
+        case 'style1':
+          return {
+            fontFamily: 'Times New Roman',
+            fontSize: '14pt',
+            fontWeight: 'bold',
+            fontStyle: 'italic',
+            textDecoration: 'none'
+          }
+        case 'style2':
+          return {
+            fontFamily: 'Arial',
+            fontSize: '10pt',
+            fontWeight: 'bold',
+            fontStyle: 'normal',
+            textDecoration: 'underline'
+          }
+        case 'style3':
+          return {
+            fontFamily: 'Tahoma',
+            fontSize: '12pt',
+            fontWeight: 'bold',
+            fontStyle: 'normal',
+            textDecoration: 'line-through'
+          }
+        case 'style4':
+          return {
+            fontFamily: 'Courier New',
+            fontSize: '18pt',
+            fontWeight: 'normal',
+            fontStyle: 'italic',
+            textDecoration: 'none'
+          }
+        case 'style5':
+          return {
+            fontFamily: 'Book Antiqua',
+            fontSize: '16pt',
+            fontWeight: 'normal',
+            fontStyle: 'italic',
+            textDecoration: 'underline'
+          }
+        default:
+          return {}
+      }
+    }
+  }
+}).mount('#app')
+</script>
+
+</body>
+</html>

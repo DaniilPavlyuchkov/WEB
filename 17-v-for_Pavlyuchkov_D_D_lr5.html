@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>17-v-for_Pavlyuchkov_D_D</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <div>
+    Xmin:
+    <input type="number" v-model.number="xmin">
+
+    Xmax:
+    <input type="number" v-model.number="xmax">
+  </div>
+
+  <div>
+    Ymin:
+    <input type="number" v-model.number="ymin">
+
+    Ymax:
+    <input type="number" v-model.number="ymax">
+  </div>
+
+  <div>
+    <label>
+      <input type="checkbox" v-model="showAxisX">
+      Ось X
+    </label>
+
+    <label>
+      <input type="checkbox" v-model="showAxisY">
+      Ось Y
+    </label>
+
+    <label>
+      <input type="checkbox" v-model="showTicks">
+      Засечки
+    </label>
+
+    <label>
+      <input type="checkbox" v-model="showLabels">
+      Подписи
+    </label>
+  </div>
+
+  <div v-if="!isValidRange">
+    Неверно задан диапазон
+  </div>
+
+  <svg v-if="isValidRange" width="640" height="480" style="border:1px solid black;">
+
+    <line
+      v-if="showAxisX && axisXVisible"
+      x1="0"
+      :y1="zeroY"
+      x2="640"
+      :y2="zeroY"
+      stroke="black"
+    ></line>
+
+    <line
+      v-if="showAxisY && axisYVisible"
+      :x1="zeroX"
+      y1="0"
+      :x2="zeroX"
+      y2="480"
+      stroke="black"
+    ></line>
+
+    <template v-if="showAxisX && axisXVisible && showTicks">
+      <line
+        v-for="(xValue, index) in xMarks"
+        :key="'xtick' + index"
+        :x1="toSvgX(xValue)"
+        :y1="zeroY - 5"
+        :x2="toSvgX(xValue)"
+        :y2="zeroY + 5"
+        stroke="black"
+      ></line>
+    </template>
+
+    <template v-if="showAxisX && axisXVisible && showLabels">
+      <text
+        v-for="(xValue, index) in xMarks"
+        :key="'xlabel' + index"
+        :x="toSvgX(xValue)"
+        :y="zeroY + 18"
+        font-size="10"
+        text-anchor="middle"
+      >
+        {{ xValue }}
+      </text>
+    </template>
+
+    <template v-if="showAxisY && axisYVisible && showTicks">
+      <line
+        v-for="(yValue, index) in yMarks"
+        :key="'ytick' + index"
+        :x1="zeroX - 5"
+        :y1="toSvgY(yValue)"
+        :x2="zeroX + 5"
+        :y2="toSvgY(yValue)"
+        stroke="black"
+      ></line>
+    </template>
+
+    <template v-if="showAxisY && axisYVisible && showLabels">
+      <text
+        v-for="(yValue, index) in yMarks"
+        :key="'ylabel' + index"
+        :x="zeroX - 8"
+        :y="toSvgY(yValue) + 3"
+        font-size="10"
+        text-anchor="end"
+      >
+        {{ yValue }}
+      </text>
+    </template>
+
+    <line
+      v-for="(segment, index) in segments"
+      :key="'segment' + index"
+      :x1="segment.x1"
+      :y1="segment.y1"
+      :x2="segment.x2"
+      :y2="segment.y2"
+      stroke="red"
+    ></line>
+
+  </svg>
+
+</div>
+
+<script>
+Vue.createApp({
+  data() {
+    return {
+      xmin: -10,
+      xmax: 10,
+      ymin: 0,
+      ymax: 100,
+      showAxisX: true,
+      showAxisY: true,
+      showTicks: true,
+      showLabels: true
+    }
+  },
+
+  computed: {
+    isValidRange() {
+      return this.xmin < this.xmax && this.ymin < this.ymax
+    },
+
+    axisXVisible() {
+      return this.ymin <= 0 && this.ymax >= 0
+    },
+
+    axisYVisible() {
+      return this.xmin <= 0 && this.xmax >= 0
+    },
+
+    zeroX() {
+      return this.toSvgX(0)
+    },
+
+    zeroY() {
+      return this.toSvgY(0)
+    },
+
+    xMarks() {
+      let result = []
+
+      for (let x = Math.ceil(this.xmin); x <= Math.floor(this.xmax); x++) {
+        result.push(x)
+      }
+
+      return result
+    },
+
+    yStep() {
+      let range = this.ymax - this.ymin
+
+      if (range <= 20) return 1
+      if (range <= 50) return 5
+      if (range <= 200) return 10
+
+      return 20
+    },
+
+    yMarks() {
+      let result = []
+      let start = Math.ceil(this.ymin / this.yStep) * this.yStep
+
+      for (let y = start; y <= this.ymax; y += this.yStep) {
+        result.push(y)
+      }
+
+      return result
+    },
+
+    segments() {
+      let result = []
+
+      let x = this.xmin
+
+      while (x < this.xmax) {
+
+        let nextX = Math.min(x + 1, this.xmax)
+
+        let y1 = x * x
+        let y2 = nextX * nextX
+
+        result.push({
+          x1: this.toSvgX(x),
+          y1: this.toSvgY(y1),
+          x2: this.toSvgX(nextX),
+          y2: this.toSvgY(y2)
+        })
+
+        x = nextX
+      }
+
+      return result
+    }
+  },
+
+  methods: {
+    toSvgX(x) {
+      return (x - this.xmin) * 640 / (this.xmax - this.xmin)
+    },
+
+    toSvgY(y) {
+      return 480 - (y - this.ymin) * 480 / (this.ymax - this.ymin)
+    }
+  }
+}).mount('#app')
+</script>
+
+</body>
+</html>

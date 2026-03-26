@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<head>
+<title>1704_[Pavlyuchkov_D_D]</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <table border="0" cellspacing="0" cellpadding="10">
+    <tr>
+      <td valign="top">
+        <input type="text" v-model="textValue">
+      </td>
+      <td>
+        <table border="1" width="600" height="300" cellspacing="0" cellpadding="0">
+          <tr>
+            <td v-bind:style="cellStyle(0,0)">
+              <span v-if="row==0 && col==0">{{ textValue }}</span>
+            </td>
+            <td v-bind:style="cellStyle(0,1)">
+              <span v-if="row==0 && col==1">{{ textValue }}</span>
+            </td>
+            <td v-bind:style="cellStyle(0,2)">
+              <span v-if="row==0 && col==2">{{ textValue }}</span>
+            </td>
+          </tr>
+          <tr>
+            <td v-bind:style="cellStyle(1,0)">
+              <span v-if="row==1 && col==0">{{ textValue }}</span>
+            </td>
+            <td v-bind:style="cellStyle(1,1)">
+              <span v-if="row==1 && col==1">{{ textValue }}</span>
+            </td>
+            <td v-bind:style="cellStyle(1,2)">
+              <span v-if="row==1 && col==2">{{ textValue }}</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</div>
+
+<script>
+Vue.createApp({
+  data() {
+    return {
+      textValue: '',
+      row: 0,
+      col: 1,
+      hIndex: 0,
+      vIndex: 0,
+      hOptions: ['left', 'center', 'right'],
+      vOptions: ['top', 'middle', 'bottom']
+    }
+  },
+
+  mounted() {
+    window.addEventListener('keydown', this.moveText)
+  },
+
+  methods: {
+    cellStyle(r, c) {
+      if (this.row === r && this.col === c) {
+        return {
+          width: '200px',
+          height: '150px',
+          textAlign: this.hOptions[this.hIndex],
+          verticalAlign: this.vOptions[this.vIndex]
+        }
+      }
+      return {
+        width: '200px',
+        height: '150px',
+        textAlign: 'left',
+        verticalAlign: 'middle'
+      }
+    },
+
+    moveText(e) {
+      if (e.key === 'ArrowRight') {
+        if (this.hIndex < 2) {
+          this.hIndex++
+        } else {
+          if (this.col < 2) {
+            this.hIndex = 0
+            this.col++
+          } else if (this.row < 1) {
+            this.hIndex = 0
+            this.col = 0
+            this.row++
+          }
+        }
+      }
+
+      if (e.key === 'ArrowLeft') {
+        if (this.hIndex > 0) {
+          this.hIndex--
+        } else {
+          if (this.col > 0) {
+            this.hIndex = 2
+            this.col--
+          } else if (this.row > 0) {
+            this.hIndex = 2
+            this.col = 2
+            this.row--
+          }
+        }
+      }
+
+      if (e.key === 'ArrowDown') {
+        if (this.vIndex < 2) {
+          this.vIndex++
+        } else {
+          if (this.row < 1) {
+            this.vIndex = 0
+            this.row++
+          }
+        }
+      }
+
+      if (e.key === 'ArrowUp') {
+        if (this.vIndex > 0) {
+          this.vIndex--
+        } else {
+          if (this.row > 0) {
+            this.vIndex = 2
+            this.row--
+          }
+        }
+      }
+    }
+  }
+}).mount('#app')
+</script>
+
+</body>
+</html>

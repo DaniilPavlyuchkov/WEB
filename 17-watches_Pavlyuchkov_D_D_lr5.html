@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>17-watches_Pavlyuchkov_D_D</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+<input
+  v-model="text"
+  @keydown.space.prevent="handleSpace"
+  @keydown.ctrl.z.prevent="handleUndo"
+>
+
+<br><br>
+
+<select size="6">
+  <option v-for="(item,index) in items" :key="index">
+    {{ item }}
+  </option>
+</select>
+
+</div>
+
+<script>
+Vue.createApp({
+
+data() {
+  return {
+    text: '',
+    items: [],
+    history: [] 
+  }
+},
+
+watch: {
+  text(newVal) {
+    if (newVal.length > 15) {
+      this.history.push([...this.items])
+
+      this.items = []
+    }
+  }
+
+},
+
+methods: {
+
+  handleSpace() {
+
+    if (this.text.length === 0) return
+
+    if (this.text.length <= 15) {
+      this.history.push([...this.items])
+      this.items.push(this.text)
+      this.text = ''
+    }
+  },
+
+  handleUndo(event) {
+
+    if (event.target.tagName !== 'INPUT') return
+
+    if (this.history.length > 0) {
+      this.items = this.history.pop()
+    }
+  }
+
+}
+
+}).mount('#app')
+</script>
+
+</body>
+</html>
