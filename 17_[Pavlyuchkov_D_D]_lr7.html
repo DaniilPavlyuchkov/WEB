@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>17_[Pavlyuchkov_D_D]_lr7</title>
+  <style type="text/css">
+    canvas { border: solid 1px #999; }
+    p { margin: 5px 0 3px; }
+    .card { margin: 15px 5px; }
+    #hist { font-family: Arial, Helvetica, sans-serif; }
+    img {
+      border: solid 1px #999;
+      display: block;
+      max-width: 320px;
+      max-height: 240px;
+    }
+    .small {
+      font-size: 13px;
+      color: #444;
+    }
+    .error {
+      color: #b00020;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .row-line {
+      margin: 6px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="hist">
+    <div class="card">
+      <p>Выберите изображение из файла</p>
+      <input id="file" type="file" accept=".jpg,.jpeg,image/jpeg" @change="handleFileChange($event)">
+      <br>
+      <img :src="Image" @load="getImageData($event)" v-if="Image">
+      <div v-if="!Image" class="small">Изображение не загружено</div>
+      <div class="error" v-if="errorText">{{ errorText }}</div>
+    </div>
+
+    <div class="card">
+      <p>Гистограмма</p>
+      <div class="row-line">
+        <input id="val" type="radio" value="Val" v-model="optState" @change="drawHist">
+        <label for="val">Значение</label>
+
+        <input id="col" type="radio" value="Col" v-model="optState" @change="drawHist">
+        <label for="col">Цвет</label>
+      </div>
+
+      <canvas
+        id="canvasHistogram"
+        ref="canvasHistogram"
+        width="256"
+        height="150"
+        @mousemove="drawGuide($event)"
+        @mouseleave="clearGuide"
+      ></canvas>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script>
+    const { createApp, ref, nextTick } = Vue;
+
+    createApp({
+      setup() {
+        const Image = ref('');
+        const errorText = ref('');
+        const imageLoaded = ref(false);
+
+        const originalWidth = ref(0);
+        const originalHeight = ref(0);
+
+        const optState = ref('Col');
+
+        const binsR = ref(new Array(256).fill(0));
+        const binsG = ref(new Array(256).fill(0));
+        const binsB = ref(new Array(256).fill(0));
+        const binsSum = ref(new Array(256).fill(0));
+
+        const totalPixels = ref(0);
+        const maxHistogramValue = ref(0);
+        const meanIndex = ref(0);
+        const guideValue = ref('-');
+        const guideX = ref(null);
+
+        const canvasHistogram = ref(null);
+
+        const resetBins = () => {
+          binsR.value = new Array(256).fill(0);
+          binsG.value = new Array(256).fill(0);
+          binsB.value = new Array(256).fill(0);
+          binsSum.value = new Array(256).fill(0);
+          totalPixels.value = 0;
+          maxHistogramValue.value = 0;
+          meanIndex.value = 0;
+          guideValue.value = '-';
+          guideX.value = null;
+        };
+
+        const clearHistogram = () => {
+          const canvas = canvasHistogram.value;
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        };
+
+        const handleFileChange = (event) => {
+          errorText.value = '';
+          imageLoaded.value = false;
+          Image.value = '';
+          resetBins();
+          clearHistogram();
+
+          const file = event.target.files[0];
+          if (!file) return;
+
+          const ok =
+            file.type === 'image/jpeg' ||
+            file.name.toLowerCase().endsWith('.jpg') ||
+            file.name.toLowerCase().endsWith('.jpeg');
+
+          if (!ok) {
+            errorText.value = 'Нужно выбрать файл формата .jpg или .jpeg';
+            return;
+          }
+
+          Image.value = URL.createObjectURL(file);
+        };
+
+        const getImageData = (event) => {
+          const img = event.target;
+          if (!img) return;
+
+          originalWidth.value = img.naturalWidth;
+          originalHeight.value = img.naturalHeight;
+
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          const src = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+          resetBins();
+          totalPixels.value = src.length / 4;
+
+          for (let i = 0; i < src.length; i += 4) {
+            const r = src[i];
+            const g = src[i + 1];
+            const b = src[i + 2];
+            const a = src[i + 3];
+
+            if (a === 0) continue;
+
+            binsR.value[r]++;
+            binsG.value[g]++;
+            binsB.value[b]++;
+
+            binsSum.value[r]++;
+            binsSum.value[g]++;
+            binsSum.value[b]++;
+          }
+
+          maxHistogramValue.value = Math.max(
+            ...binsR.value,
+            ...binsG.value,
+            ...binsB.value,
+            ...binsSum.value
+          );
+
+          let totalWeight = 0;
+          let weighted = 0;
+          for (let i = 0; i < 256; i++) {
+            totalWeight += binsSum.value[i];
+            weighted += binsSum.value[i] * i;
+          }
+          meanIndex.value = totalWeight ? Math.round(weighted / totalWeight) : 0;
+
+          imageLoaded.value = true;
+          drawHist();
+        };
+
+        const drawHist = async () => {
+          await nextTick();
+
+          const canvas = canvasHistogram.value;
+          if (!canvas) return;
+
+          const ctx = canvas.getContext('2d');
+          const width = canvas.width;
+          const height = canvas.height;
+
+          ctx.clearRect(0, 0, width, height);
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, width, height);
+
+          if (!imageLoaded.value || maxHistogramValue.value === 0) {
+            return;
+          }
+
+          const maxR = Math.max(...binsR.value, 1);
+          const maxG = Math.max(...binsG.value, 1);
+          const maxB = Math.max(...binsB.value, 1);
+          const maxS = Math.max(...binsSum.value, 1);
+
+          for (let i = 0; i < 256; i++) {
+            const x = width - 1 - i;
+
+            if (optState.value === 'Val') {
+              const h = Math.round((binsSum.value[i] / maxS) * (height - 2));
+              ctx.strokeStyle = '#000';
+              ctx.beginPath();
+              ctx.moveTo(x, height);
+              ctx.lineTo(x, height - h);
+              ctx.stroke();
+            } else {
+              const hR = Math.round((binsR.value[i] / maxR) * (height - 2));
+              const hG = Math.round((binsG.value[i] / maxG) * (height - 2));
+              const hB = Math.round((binsB.value[i] / maxB) * (height - 2));
+
+              ctx.globalAlpha = 0.55;
+
+              ctx.strokeStyle = '#f00';
+              ctx.beginPath();
+              ctx.moveTo(x, height);
+              ctx.lineTo(x, height - hR);
+              ctx.stroke();
+
+              ctx.strokeStyle = '#0a0';
+              ctx.beginPath();
+              ctx.moveTo(x, height);
+              ctx.lineTo(x, height - hG);
+              ctx.stroke();
+
+              ctx.strokeStyle = '#00f';
+              ctx.beginPath();
+              ctx.moveTo(x, height);
+              ctx.lineTo(x, height - hB);
+              ctx.stroke();
+
+              ctx.globalAlpha = 1;
+            }
+          }
+
+          if (guideX.value !== null) {
+            ctx.strokeStyle = '#666';
+            ctx.beginPath();
+            ctx.moveTo(guideX.value, 0);
+            ctx.lineTo(guideX.value, height);
+            ctx.stroke();
+          }
+        };
+
+        const drawGuide = (event) => {
+          const canvas = canvasHistogram.value;
+          if (!canvas || !imageLoaded.value) return;
+
+          const rect = canvas.getBoundingClientRect();
+          let x = Math.floor(event.clientX - rect.left);
+
+          if (x < 0) x = 0;
+          if (x > 255) x = 255;
+
+          guideX.value = x;
+          guideValue.value = 255 - x;
+
+          drawHist();
+        };
+
+        const clearGuide = () => {
+          guideX.value = null;
+          guideValue.value = '-';
+          drawHist();
+        };
+
+        nextTick(() => {
+          clearHistogram();
+        });
+
+        return {
+          Image,
+          errorText,
+          imageLoaded,
+          originalWidth,
+          originalHeight,
+          optState,
+          totalPixels,
+          maxHistogramValue,
+          meanIndex,
+          guideValue,
+          canvasHistogram,
+          handleFileChange,
+          getImageData,
+          drawHist,
+          drawGuide,
+          clearGuide
+        };
+      }
+    }).mount('#hist');
+  </script>
+</body>
+</html>
